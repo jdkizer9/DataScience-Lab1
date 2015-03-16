@@ -72,7 +72,7 @@ import org.apache.hadoop.io.{LongWritable, Text}
 //   }
 // }
  
-object NgramsAggregate {
+object SimpleApp {
   /* find ngrams that match a regex; args are regex output input [input ..] */
   def main(args: Array[String]) {
     val conf = new SparkConf()
