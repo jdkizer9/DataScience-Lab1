@@ -38,14 +38,14 @@ import org.apache.spark.SparkContext
 import org.apache.spark.SparkContext._
 import org.apache.spark.SparkConf
  
-class Regex(str: String) extends Serializable {
-  val regex = str.r.unanchored
+// class Regex(str: String) extends Serializable {
+//   val regex = str.r.unanchored
  
-  def matches(str: String) = str match {
-    case regex(_*) => true
-    case _ => false
-  }
-}
+//   def matches(str: String) = str match {
+//     case regex(_*) => true
+//     case _ => false
+//   }
+// }
  
 class NgramRecord(line: String) {
   val field = line.split('\t')
@@ -54,7 +54,7 @@ class NgramRecord(line: String) {
   val volumes = field(2).toInt
   val matches = field(3).toInt
  
-  def matches(r: Regex) = r matches ngram
+  // def matches(r: Regex) = r matches ngram
  
   override def toString = s"$ngram,$year,$volumes,$matches"
 }
@@ -62,33 +62,34 @@ class NgramRecord(line: String) {
 import org.apache.hadoop.mapred.SequenceFileInputFormat
 import org.apache.hadoop.io.{LongWritable, Text}
  
-import com.esotericsoftware.kryo.Kryo
-import org.apache.spark.serializer.KryoRegistrator
+// import com.esotericsoftware.kryo.Kryo
+// import org.apache.spark.serializer.KryoRegistrator
  
-class Registrator extends KryoRegistrator {
-  override def registerClasses(kryo: Kryo) {
-    kryo.register(classOf[LongWritable])
-    kryo.register(classOf[Text])
-  }
-}
+// class Registrator extends KryoRegistrator {
+//   override def registerClasses(kryo: Kryo) {
+//     kryo.register(classOf[LongWritable])
+//     kryo.register(classOf[Text])
+//   }
+// }
  
 object NgramsAggregate {
   /* find ngrams that match a regex; args are regex output input [input ..] */
   def main(args: Array[String]) {
     val conf = new SparkConf()
       .setAppName("ngrams")
-      .set("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
-      .set("spark.kryo.registrator", "Registrator")
+      // .set("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
+      // .set("spark.kryo.registrator", "Registrator")
     val sc = new SparkContext(conf)
-    val regex = new Regex(args(0))
-    val output = args(1)
+    // val regex = new Regex(args(0))
+    // val output = args(1)
     /* if things were simple */
     /* val input = sc.union(args.drop(2).map(sc.textFile(_))) */
     /* alas they are not */
-    val input = sc.union(args.drop(2)
-      .map(sc.hadoopFile[LongWritable, Text,
-        SequenceFileInputFormat[LongWritable, Text]](_)))
-      .map(r => new NgramRecord(r._2.toString))
-   input.filter(_ matches regex).saveAsTextFile(output)
+
+    val s3BucketURI = "s3n://datasets.elasticmapreduce/ngrams/books/20090715/eng-us-all/1gram/data/"
+    val records = sc.hadoopFile(s3BucketURI, classOf[SequenceFileInputFormat[LongWritable, Text]], classOf[LongWritable], classOf[Text])
+					.map(r => new NgramRecord(r._2.toString))
+
+	records.take(100).foreach(r => println(r.toString))
   }
 }
