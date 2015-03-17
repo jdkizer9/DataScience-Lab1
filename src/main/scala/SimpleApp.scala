@@ -90,6 +90,12 @@ object SimpleApp {
     val records = sc.hadoopFile(s3BucketURI, classOf[SequenceFileInputFormat[LongWritable, Text]], classOf[LongWritable], classOf[Text])
 					.map(r => new NgramRecord(r._2.toString))
 
-	records.take(100).foreach(r => println(r.toString))
+	val ngramMap = records
+		.map(r => (r.ngram, (r.year, r.matches)))
+		.groupByKey()
+		.cache
+
+	ngramMap.first._2.foreach(println)
+
   }
 }
