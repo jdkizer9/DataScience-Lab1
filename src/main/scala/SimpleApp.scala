@@ -37,6 +37,9 @@
 import org.apache.spark.SparkContext
 import org.apache.spark.SparkContext._
 import org.apache.spark.SparkConf
+import org.apache.spark.rdd.RDD
+import org.apache.spark.mllib.linalg._
+import org.apache.spark.mllib.feature._
  
 // class Regex(str: String) extends Serializable {
 //   val regex = str.r.unanchored
@@ -93,27 +96,33 @@ object SimpleApp {
 	val yearSet = (1908 to 2008).toSet
 	//ngramMap RDD[ngram:String -> Array of Match Counts)
 	val ngramMap = records
-		.map(r => (r.ngram, (r.year, r.matches)))
+		.map(r => (r.ngram, (r.year, r.matches.toDouble)))
 		.groupByKey()
-		.map { case (ngram:String, iter: Iterable[(Int,Int)]) => {
+		.map { case (ngram:String, iter: Iterable[(Int,Double)]) => {
 				(ngram, iter.filter(pair => yearSet.contains(pair._1)))
 			}
 		}
-		.filter { case (ngram:String, iter: Iterable[(Int,Int)]) => {
-				((iter.size == yearSet.size) && (iter.foldLeft(0)(_ + _._2 ) > yearSet.size*20))
+		.filter { case (ngram:String, iter: Iterable[(Int,Double)]) => {
+				((iter.size == yearSet.size) && (iter.foldLeft(0.0)(_ + _._2 ) > yearSet.size*20))
 			}
 		}
-		.map { case (ngram:String, iter: Iterable[(Int,Int)]) => {
-				val yearMatchPairs: List[(Int, Int)] = iter.toList.sortBy(pair => pair._1)
-				val matchArray = yearMatchPairs.unzip._2.toArray
-				(ngram, matchArray)
+		.map { case (ngram:String, iter: Iterable[(Int,Double)]) => {
+				val yearMatchPairs: List[(Int, Double)] = iter.toList.sortBy(pair => pair._1)
+				val matchVector = Vectors.dense(yearMatchPairs.unzip._2.toArray)
+				(ngram, matchVector)
 			}
 		}
 		.cache
 
-	println(ngramMap.first._1)
-	println(ngramMap.first._2)
-	println("There are " + ngramMap.count + " 1grams to analyze")
+	val normalizer = new Normalizer()
+	val normalizedNgramMap: RDD[(String, Vector)] = ngramMap
+		.mapValues(vec => normalizer.transform(vec))
+
+	val ngramSubset = sc.parallelize(normalizedNgramMap.take(1000), 4).cache
+
+	println(ngramSubset.first._1)
+	println(ngramSubset.first._2)
+	println("There are " + ngramSubset.count + " 1grams to analyze")
 
   }
 }
