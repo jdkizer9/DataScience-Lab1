@@ -145,9 +145,17 @@ object SimpleApp {
 
 	val ngramSubset = sc.parallelize(ngramMap.take(1000), 4).cache
 	// val pearsons = new PearsonsCorrelation()
-	val pairwiseCorrelations = ngramSubset.cartesian(ngramSubset)
+	// val pairwiseCorrelations = ngramMap.cartesian(ngramMap)
+	val pairwiseCorrelations = ngramMap.cartesian(ngramSubset)
+		.filter { case ( (ngram1:String, array1:Array[Double]), (ngram2:String, array2:Array[Double])) => {
+				(ngram1 != ngram2)
+			}
+		}
+		.groupByKey()
+		.mapValues(iter => iter.head)
 		.map { case ( (ngram1:String, array1:Array[Double]), (ngram2:String, array2:Array[Double])) => {
-				((ngram1, ngram2), correlation(array1, array2))
+				if(ngram1 < ngram2) ((ngram1, ngram2), correlation(array1, array2))
+				else ((ngram2, ngram1), correlation(array1, array2))
 			}
 		}
 		.sortBy(pair => pair._2)
