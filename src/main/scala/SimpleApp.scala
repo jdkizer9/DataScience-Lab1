@@ -47,7 +47,7 @@ import org.apache.spark.SparkConf
 //   }
 // }
  
-class NgramRecord(line: String) {
+class NgramRecord(line: String) extends Serializable {
   val field = line.split('\t')
   val ngram = field(0)
   val year = field(1).toInt
