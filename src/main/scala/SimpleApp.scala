@@ -146,7 +146,7 @@ object SimpleApp {
 	val ngramSubset = sc.parallelize(ngramMap.take(1000), 4).cache
 	// val pearsons = new PearsonsCorrelation()
 	// val pairwiseCorrelations = ngramMap.cartesian(ngramMap)
-	val pairwiseCorrelations = ngramMap.cartesian(ngramSubset)
+	val pairwiseCorrelations = ngramSubset.cartesian(ngramSubset)
 		.filter { case ( (ngram1:String, array1:Array[Double]), (ngram2:String, array2:Array[Double])) => {
 				(ngram1 < ngram2) 
 			}
@@ -155,11 +155,18 @@ object SimpleApp {
 				((ngram1, ngram2), correlation(array1, array2))
 			}
 		}
-		.sortBy(pair => pair._2)
+		.cache
 
 	println("There are " + pairwiseCorrelations.count + " pairwise correlations")
 
-	pairwiseCorrelations.take(100).foreach(println)
+	println("The 100 most positively correlated are: ")
+	pairwiseCorrelations.sortBy(pair => pair._2, false).take(100).foreach(println)
+
+	println("The 100 most negativly correlated words are: ")
+	pairwiseCorrelations.sortBy(pair => pair._2, true).take(100).foreach(println)
+
+	println("The 100 least correlated words are: ")
+	pairwiseCorrelations.map(pair => if(pair._2 >= 0) pair else (pair._1, -pair._2)).sortBy(pair => pair._2, true).take(100).foreach(println)
 
 
 	// println(ngramSubset.first._1)
