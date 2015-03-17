@@ -62,23 +62,23 @@ class NgramRecord(line: String) extends Serializable {
 import org.apache.hadoop.mapred.SequenceFileInputFormat
 import org.apache.hadoop.io.{LongWritable, Text}
  
-// import com.esotericsoftware.kryo.Kryo
-// import org.apache.spark.serializer.KryoRegistrator
+import com.esotericsoftware.kryo.Kryo
+import org.apache.spark.serializer.KryoRegistrator
  
-// class Registrator extends KryoRegistrator {
-//   override def registerClasses(kryo: Kryo) {
-//     kryo.register(classOf[LongWritable])
-//     kryo.register(classOf[Text])
-//   }
-// }
+class Registrator extends KryoRegistrator {
+  override def registerClasses(kryo: Kryo) {
+    kryo.register(classOf[LongWritable])
+    kryo.register(classOf[Text])
+  }
+}
  
 object SimpleApp {
   /* find ngrams that match a regex; args are regex output input [input ..] */
   def main(args: Array[String]) {
     val conf = new SparkConf()
       .setAppName("ngrams")
-      // .set("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
-      // .set("spark.kryo.registrator", "Registrator")
+      .set("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
+      .set("spark.kryo.registrator", "Registrator")
     val sc = new SparkContext(conf)
     // val regex = new Regex(args(0))
     // val output = args(1)
@@ -87,12 +87,19 @@ object SimpleApp {
     /* alas they are not */
 
     val s3BucketURI = "s3n://datasets.elasticmapreduce/ngrams/books/20090715/eng-us-all/1gram/data/"
-    val records = sc.hadoopFile(s3BucketURI, classOf[SequenceFileInputFormat[LongWritable, Text]], classOf[LongWritable], classOf[Text])
+    val records = sc.hadoopFile(s3BucketURI, classOf[SequenceFileInputFormat[LongWritable, Text]], classOf[LongWritable], classOf[Text], 16)
 					.map(r => new NgramRecord(r._2.toString))
 
+	val yearSet = (1900 to 2000).toSet
 	val ngramMap = records
 		.map(r => (r.ngram, (r.year, r.matches)))
 		.groupByKey()
+		.filter { case (ngram:String, iter: Iterable[(Int,Int)]) => {
+				val years = iter.unzip._1.toSet
+				val intersection = yearSet & years
+				yearSet.size == intersection.size
+			}
+		}
 		.cache
 
 	ngramMap.first._2.foreach(println)
