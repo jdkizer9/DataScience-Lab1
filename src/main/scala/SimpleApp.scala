@@ -73,6 +73,7 @@ class Registrator extends KryoRegistrator {
   override def registerClasses(kryo: Kryo) {
     kryo.register(classOf[LongWritable])
     kryo.register(classOf[Text])
+    kryo.register(classOf[PearsonsCorrelation])
   }
 }
  
