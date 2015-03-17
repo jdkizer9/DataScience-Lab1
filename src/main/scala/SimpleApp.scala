@@ -40,6 +40,7 @@ import org.apache.spark.SparkConf
 import org.apache.spark.rdd.RDD
 import org.apache.spark.mllib.linalg._
 import org.apache.spark.mllib.feature._
+import org.apache.commons.math3.stat.correlation.PearsonsCorrelation
  
 // class Regex(str: String) extends Serializable {
 //   val regex = str.r.unanchored
@@ -94,7 +95,8 @@ object SimpleApp {
 					.map(r => new NgramRecord(r._2.toString))
 
 	val yearSet = (1908 to 2008).toSet
-	//ngramMap RDD[ngram:String -> Array of Match Counts)
+	//ngramMap RDD[ngram:String -> Vector of Match Counts)
+	val normalizer = new Normalizer()
 	val ngramMap = records
 		.map(r => (r.ngram, (r.year, r.matches.toDouble)))
 		.groupByKey()
@@ -109,20 +111,34 @@ object SimpleApp {
 		.map { case (ngram:String, iter: Iterable[(Int,Double)]) => {
 				val yearMatchPairs: List[(Int, Double)] = iter.toList.sortBy(pair => pair._1)
 				val matchVector = Vectors.dense(yearMatchPairs.unzip._2.toArray)
-				(ngram, matchVector)
+				(ngram, normalizer.transform(matchVector).toArray)
 			}
 		}
 		.cache
 
-	val normalizer = new Normalizer()
-	val normalizedNgramMap: RDD[(String, Vector)] = ngramMap
-		.mapValues(vec => normalizer.transform(vec))
+	
+	// val normalizedNgramMap: RDD[(String, Vector)] = ngramMap
+	// 	.mapValues(vec => normalizer.transform(vec))
 
-	val ngramSubset = sc.parallelize(normalizedNgramMap.take(1000), 4).cache
+	val ngramSubset = sc.parallelize(ngramMap.take(1000), 4).cache
+	val pearsons = new PearsonsCorrelation()
+	val pairwiseCorrelations = ngramSubset.cartesian(ngramSubset)
+		.map { case ( (ngram1:String, array1:Array[Double]), (ngram2:String, array2:Array[Double])) => {
+				((ngram1, ngram2), pearsons.correlation(array1, array2))
+			}
+		}
+		.sortBy(pair => pair._2)
 
-	println(ngramSubset.first._1)
-	println(ngramSubset.first._2)
-	println("There are " + ngramSubset.count + " 1grams to analyze")
+	println("There are " + pairwiseCorrelations.count + " pairwise correlations")
+
+	pairwiseCorrelations.take(100).foreach(println)
+
+
+	// println(ngramSubset.first._1)
+	// println(ngramSubset.first._2)
+	// println("There are " + ngramSubset.count + " 1grams to analyze")
+
+
 
   }
 }
