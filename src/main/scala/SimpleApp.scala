@@ -112,7 +112,8 @@ object SimpleApp {
 		.cache
 
 	println(ngramMap.first._1)
-	ngramMap.first._2.foreach(println)
+	println(ngramMap.first._2)
+	println("There are " + ngramMap.count + " 1grams to analyze")
 
   }
 }
