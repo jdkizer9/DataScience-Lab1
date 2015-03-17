@@ -40,7 +40,12 @@ import org.apache.spark.SparkConf
 import org.apache.spark.rdd.RDD
 import org.apache.spark.mllib.linalg._
 import org.apache.spark.mllib.feature._
-import org.apache.commons.math3.stat.correlation.PearsonsCorrelation
+
+import scala.math.sqrt
+
+import scala.math.pow
+// import org.apache.commons.math3.stat.correlation.PearsonsCorrelation
+// import org.apache.commons.math3.stat.StatUtils._
  
 // class Regex(str: String) extends Serializable {
 //   val regex = str.r.unanchored
@@ -73,12 +78,29 @@ class Registrator extends KryoRegistrator {
   override def registerClasses(kryo: Kryo) {
     kryo.register(classOf[LongWritable])
     kryo.register(classOf[Text])
-    kryo.register(classOf[PearsonsCorrelation])
+    // kryo.register(classOf[PearsonsCorrelation])
   }
 }
+
+
  
 object SimpleApp {
   /* find ngrams that match a regex; args are regex output input [input ..] */
+
+  def correlation(xArray:Array[Double], yArray:Array[Double]): Double = {
+  	val meanX = xArray.sum / xArray.length
+  	val meanY = yArray.sum / yArray.length
+
+  	val numerator = xArray.zip(yArray).foldLeft(0.0){ case (acc: Double, (x: Double, y:Double)) => {
+			acc + (x-meanX)*(y-meanY)
+		}
+	}
+
+	val denomX = sqrt(xArray.foldLeft(0.0) {case (acc: Double, x:Double) => acc + pow((x-meanX),2.0)})
+	val denomY = sqrt(yArray.foldLeft(0.0) {case (acc: Double, y:Double) => acc + pow((y-meanY),2.0)})
+
+	numerator / (denomX*denomY)
+  }
   def main(args: Array[String]) {
     val conf = new SparkConf()
       .setAppName("ngrams")
@@ -122,10 +144,10 @@ object SimpleApp {
 	// 	.mapValues(vec => normalizer.transform(vec))
 
 	val ngramSubset = sc.parallelize(ngramMap.take(1000), 4).cache
-	val pearsons = new PearsonsCorrelation()
+	// val pearsons = new PearsonsCorrelation()
 	val pairwiseCorrelations = ngramSubset.cartesian(ngramSubset)
 		.map { case ( (ngram1:String, array1:Array[Double]), (ngram2:String, array2:Array[Double])) => {
-				((ngram1, ngram2), pearsons.correlation(array1, array2))
+				((ngram1, ngram2), correlation(array1, array2))
 			}
 		}
 		.sortBy(pair => pair._2)
