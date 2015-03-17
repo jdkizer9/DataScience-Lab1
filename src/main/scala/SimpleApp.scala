@@ -91,7 +91,7 @@ object SimpleApp {
 					.map(r => new NgramRecord(r._2.toString))
 
 	val yearSet = (1908 to 2008).toSet
-	//ngramMap RDD[ngram:String -> 
+	//ngramMap RDD[ngram:String -> Array of Match Counts)
 	val ngramMap = records
 		.map(r => (r.ngram, (r.year, r.matches)))
 		.groupByKey()
@@ -100,11 +100,18 @@ object SimpleApp {
 			}
 		}
 		.filter { case (ngram:String, iter: Iterable[(Int,Int)]) => {
-				iter.size == yearSet.size
+				((iter.size == yearSet.size) && (iter.foldLeft(0)(_ + _._2 ) > yearSet.size*20))
+			}
+		}
+		.map { case (ngram:String, iter: Iterable[(Int,Int)]) => {
+				val yearMatchPairs: List[(Int, Int)] = iter.toList.sortBy(pair => pair._1)
+				val matchArray = yearMatchPairs.unzip._2.toArray
+				(ngram, matchArray)
 			}
 		}
 		.cache
 
+	println(ngramMap.first._1)
 	ngramMap.first._2.foreach(println)
 
   }
