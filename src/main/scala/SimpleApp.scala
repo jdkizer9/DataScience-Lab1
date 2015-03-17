@@ -107,11 +107,6 @@ object SimpleApp {
       .set("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
       .set("spark.kryo.registrator", "Registrator")
     val sc = new SparkContext(conf)
-    // val regex = new Regex(args(0))
-    // val output = args(1)
-    /* if things were simple */
-    /* val input = sc.union(args.drop(2).map(sc.textFile(_))) */
-    /* alas they are not */
 
     val s3BucketURI = "s3n://datasets.elasticmapreduce/ngrams/books/20090715/eng-us-all/1gram/data/"
     val records = sc.hadoopFile(s3BucketURI, classOf[SequenceFileInputFormat[LongWritable, Text]], classOf[LongWritable], classOf[Text], 16)
@@ -121,10 +116,15 @@ object SimpleApp {
 	//ngramMap RDD[ngram:String -> Vector of Match Counts)
 	val normalizer = new Normalizer()
 	val ngramMap = records
-		.map(r => (r.ngram, (r.year, r.matches.toDouble)))
+		.map(r => (r.ngram.toLowerCase, (r.year, r.matches.toDouble)))
 		.groupByKey()
 		.map { case (ngram:String, iter: Iterable[(Int,Double)]) => {
-				(ngram, iter.filter(pair => yearSet.contains(pair._1)))
+				val combineYears:Iterable[(Int,Double)] = iter
+					.groupBy( (pair:(Int,Double)) => pair._1)
+					.mapValues((i:Iterable[(Int,Double)]) => i.foldLeft(0.0)(_ + _._2))
+					.toIterable
+
+				(ngram, combineYears.filter(pair => yearSet.contains(pair._1)))
 			}
 		}
 		.filter { case (ngram:String, iter: Iterable[(Int,Double)]) => {
@@ -138,10 +138,6 @@ object SimpleApp {
 			}
 		}
 		.cache
-
-	
-	// val normalizedNgramMap: RDD[(String, Vector)] = ngramMap
-	// 	.mapValues(vec => normalizer.transform(vec))
 
 	val ngramSubset = sc.parallelize(ngramMap.take(1000), 4).cache
 	// val pearsons = new PearsonsCorrelation()
