@@ -90,14 +90,17 @@ object SimpleApp {
     val records = sc.hadoopFile(s3BucketURI, classOf[SequenceFileInputFormat[LongWritable, Text]], classOf[LongWritable], classOf[Text], 16)
 					.map(r => new NgramRecord(r._2.toString))
 
-	val yearSet = (1900 to 2000).toSet
+	val yearSet = (1908 to 2008).toSet
+	//ngramMap RDD[ngram:String -> 
 	val ngramMap = records
 		.map(r => (r.ngram, (r.year, r.matches)))
 		.groupByKey()
+		.map { case (ngram:String, iter: Iterable[(Int,Int)]) => {
+				(ngram, iter.filter(pair => yearSet.contains(pair._1)))
+			}
+		}
 		.filter { case (ngram:String, iter: Iterable[(Int,Int)]) => {
-				val years = iter.unzip._1.toSet
-				val intersection = yearSet & years
-				yearSet.size == intersection.size
+				iter.size == yearSet.size
 			}
 		}
 		.cache
