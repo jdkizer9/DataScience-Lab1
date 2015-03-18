@@ -129,7 +129,7 @@ object SimpleApp {
     val sc = new SparkContext(conf)
 
     val s3BucketURI = "s3n://datasets.elasticmapreduce/ngrams/books/20090715/eng-us-all/1gram/data/"
-    val records = sc.hadoopFile(s3BucketURI, classOf[SequenceFileInputFormat[LongWritable, Text]], classOf[LongWritable], classOf[Text], 256)
+    val records = sc.hadoopFile(s3BucketURI, classOf[SequenceFileInputFormat[LongWritable, Text]], classOf[LongWritable], classOf[Text], 64)
 					.map(r => new NgramRecord(r._2.toString))
 
 	val yearSet = (1908 to 2008).toSet
@@ -172,7 +172,7 @@ object SimpleApp {
 	//val ngramSamples = ngramMap.sample(false, 0.05)
 
 	writeln("Randomly sampled " + ngramMap.count + " 1grams to analyze")
-	
+
 	val cartesianWords = ngramMap.cartesian(ngramMap)
 		.filter { case ( (ngram1:String, array1:Array[Double]), (ngram2:String, array2:Array[Double])) => {
 				(ngram1 < ngram2) 
