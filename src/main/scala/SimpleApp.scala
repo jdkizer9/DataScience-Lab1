@@ -160,10 +160,10 @@ object SimpleApp {
 		}
 		.cache
 
-	// val ngramSubset = sc.parallelize(ngramMap.take(1000), 4).cache
+	val ngramSubset = sc.parallelize(ngramMap.take(1000), 4).cache
 	
 	// val cartesianWords = ngramSubset.cartesian(ngramSubset)
-	val cartesianWords = ngramMap.cartesian(ngramMap)
+	val cartesianWords = ngramSubset.cartesian(ngramSubset)
 		.filter { case ( (ngram1:String, array1:Array[Double]), (ngram2:String, array2:Array[Double])) => {
 				(ngram1 < ngram2) 
 			}
