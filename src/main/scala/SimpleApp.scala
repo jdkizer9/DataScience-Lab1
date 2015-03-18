@@ -45,17 +45,8 @@ import scala.math.sqrt
 import scala.math.pow
 import java.io._
 
-// import org.apache.commons.math3.stat.correlation.PearsonsCorrelation
 import org.apache.commons.math3.stat.descriptive.moment.StandardDeviation
- 
-// class Regex(str: String) extends Serializable {
-//   val regex = str.r.unanchored
- 
-//   def matches(str: String) = str match {
-//     case regex(_*) => true
-//     case _ => false
-//   }
-// }
+
  
 class NgramRecord(line: String) extends Serializable {
   val field = line.split('\t')
@@ -63,9 +54,7 @@ class NgramRecord(line: String) extends Serializable {
   val year = field(1).toInt
   val volumes = field(2).toInt
   val matches = field(3).toInt
- 
-  // def matches(r: Regex) = r matches ngram
- 
+
   override def toString = s"$ngram,$year,$volumes,$matches"
 }
  
@@ -79,7 +68,6 @@ class Registrator extends KryoRegistrator {
   override def registerClasses(kryo: Kryo) {
     kryo.register(classOf[LongWritable])
     kryo.register(classOf[Text])
-    // kryo.register(classOf[PearsonsCorrelation])
   }
 }
 
@@ -103,15 +91,6 @@ object SimpleApp {
 	numerator / (denomX*denomY)
   }
 
-	// def variance(xArray:Array[Double]) : Double = {
-	// 	val meanX = xArray.sum / xArray.length
-	// 	val sumOfSquares = xArray.foldLeft(0.0) {case (acc: Double, x:Double) => acc + pow((x-meanX),2.0)}
-	// 	sumOfSquares / xArray.length.toDouble
-	// }
-
-	// def stddev(xArray:Array[Double]) : Double = {
-	// 	sqrt(variance(xArray))
-	// }
   def correlationSeries(xArray:Array[Double], yArray:Array[Double], windowSize: Int = 10): (Double, Array[Double]) = {
 
   	assert(xArray.size == yArray.size)
@@ -139,9 +118,6 @@ object SimpleApp {
   }
 
   def main(args: Array[String]) {
-
-  	
- 	
 
   	val writer = new PrintWriter(new File(args(0)))
   	def writeln(str: String): Unit = writer.write(str + '\n')
@@ -184,11 +160,10 @@ object SimpleApp {
 		}
 		.cache
 
-	val ngramSubset = sc.parallelize(ngramMap.take(1000), 4).cache
-	// val pearsons = new PearsonsCorrelation()
-	// val pairwiseCorrelations = ngramMap.cartesian(ngramMap)
+	// val ngramSubset = sc.parallelize(ngramMap.take(1000), 4).cache
 	
-	val cartesianWords = ngramSubset.cartesian(ngramSubset)
+	// val cartesianWords = ngramSubset.cartesian(ngramSubset)
+	val cartesianWords = ngramMap.cartesian(ngramMap)
 		.filter { case ( (ngram1:String, array1:Array[Double]), (ngram2:String, array2:Array[Double])) => {
 				(ngram1 < ngram2) 
 			}
@@ -200,23 +175,18 @@ object SimpleApp {
 			}
 		}
 
-	// println("There are " + pairwiseCorrelations.count + " pairwise correlations")
-	// println("The 100 most positively correlated are: ")
-	// pairwiseCorrelations.sortBy(pair => pair._2, false).take(100).foreach(println)
-
-	// println("The 100 most negativly correlated words are: ")
-	// pairwiseCorrelations.sortBy(pair => pair._2, true).take(100).foreach(println)
-
-	// println("The 100 least correlated words are: ")
-	// pairwiseCorrelations.map(pair => if(pair._2 >= 0) pair else (pair._1, -pair._2)).sortBy(pair => pair._2, true).take(100).foreach(println)
-
+	writeln("There are " + ngramMap.count + " 1grams to analyze")
 	writeln("There are " + pairwiseCorrelations.count + " pairwise correlations")
+	writeln("\n*****************************************************")
 	writeln("The 100 most positively correlated are: ")
+
 	pairwiseCorrelations.sortBy(pair => pair._2, false).take(100).foreach(pair => writeln(pair.toString))
 
+	writeln("\n*****************************************************")
 	writeln("The 100 most negativly correlated words are: ")
 	pairwiseCorrelations.sortBy(pair => pair._2, true).take(100).foreach(pair => writeln(pair.toString))
 
+	writeln("\n*****************************************************")
 	writeln("The 100 least correlated words are: ")
 	pairwiseCorrelations.map(pair => if(pair._2 >= 0) pair else (pair._1, -pair._2)).sortBy(pair => pair._2, true).take(100).foreach(pair => writeln(pair.toString))
 
@@ -226,10 +196,11 @@ object SimpleApp {
 			}
 		}
 
+	writeln("\n*****************************************************")
 	writeln("The 100 most interesting word correlation time series (i.e., greatest STD DEV): ")
 	corrSeries
 		//.filter(pair => pair._2._1 < 10)
-		//.sortBy(pair => pair._2._1, false)
+		.sortBy(pair => pair._2._1, false)
 		.take(100)
 		.foreach(pair => {
 			writeln(pair._1 + ": " + pair._2._1)
