@@ -116,15 +116,17 @@ object SimpleApp {
 
   	assert(xArray.size == yArray.size)
 
-  	val windowLeftEdgeRange = ((1-windowSize) to xArray.size-1)
-  	val windowList = windowLeftEdgeRange
+  	val windowLeftEdgeRange = ((2-windowSize) to xArray.size-2)
+  	val windowList:List[List[Int]] = windowLeftEdgeRange
   		.map(leftEdge => {
   			(leftEdge to leftEdge+windowSize-1)
   			.toList
   			.filter(x => x>=0 && x<xArray.size)
   		})
+  		.filter(l => l.length >=5)
+  		.toList
 
-  	val correlationArray = windowList
+  	val correlationArray:Array[Double] = windowList
   		.map( (window: List[Int]) => {
 
   			val xWindow = window.map(i => xArray(i)).toArray
