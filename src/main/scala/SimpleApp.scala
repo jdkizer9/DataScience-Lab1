@@ -103,17 +103,14 @@ object SimpleApp {
 	numerator / (denomX*denomY)
   }
 
-	def variance(items:Array[Double]) : Double = {
-		val itemMean = items.sum / items.length
-		val count = items.length
-		val sumOfSquares = items.foldLeft(0.0)((total,item)=>{
-			total + math.pow(item - itemMean,2)
-		})
-		sumOfSquares / count.toDouble
+	def variance(xArray:Array[Double]) : Double = {
+		val meanX = xArray.sum / xArray.length
+		val sumOfSquares = xArray.foldLeft(0.0) {case (acc: Double, x:Double) => acc + pow((x-meanX),2.0)}
+		sumOfSquares / xArray.length.toDouble
 	}
 
-	def stddev(items:Array[Double]) : Double = {
-		math.sqrt(variance(items))
+	def stddev(xArray:Array[Double]) : Double = {
+		sqrt(variance(xArray))
 	}
   def correlationSeries(xArray:Array[Double], yArray:Array[Double], windowSize: Int = 10): (Double, Array[Double]) = {
 
@@ -227,7 +224,7 @@ object SimpleApp {
 		}
 
 	writeln("The 100 most interesting word correlation time series (i.e., greatest STD DEV): ")
-	corrSeries.sortBy(pair => pair._2._1, false).take(100).foreach(pair => writeln(pair.toString))
+	corrSeries.filter(pair => pair._2._1 < 10).sortBy(pair => pair._2._1, false).take(100).foreach(pair => writeln(pair.toString))
 	
 	writer.close()
 
