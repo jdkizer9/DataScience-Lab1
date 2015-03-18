@@ -226,8 +226,8 @@ object SimpleApp {
 
 	writeln("The 100 most interesting word correlation time series (i.e., greatest STD DEV): ")
 	corrSeries
-		.filter(pair => pair._2._1 < 10)
-		.sortBy(pair => pair._2._1, false)
+		//.filter(pair => pair._2._1 < 10)
+		//.sortBy(pair => pair._2._1, false)
 		.take(100)
 		.foreach(pair => {
 			writeln(pair._1 + ": " + pair._2._1)
