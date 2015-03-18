@@ -102,7 +102,46 @@ object SimpleApp {
 
 	numerator / (denomX*denomY)
   }
+
+	def variance(items:Array[Double]) : Double = {
+		val itemMean = items.sum / items.length
+		val count = items.length
+		val sumOfSquares = items.foldLeft(0.0)((total,item)=>{
+			total + math.pow(item - itemMean,2)
+		})
+		sumOfSquares / count.toDouble
+	}
+
+	def stddev(items:Array[Double]) : Double = {
+		math.sqrt(variance(items))
+	}
+  def correlationSeries(xArray:Array[Double], yArray:Array[Double], windowSize: Int = 10): (Double, Array[Double]) = {
+
+  	assert(xArray.size == yArray.size)
+
+  	val windowLeftEdgeRange = ((1-windowSize) to xArray.size-1)
+  	val windowList = windowLeftEdgeRange
+  		.map(leftEdge => {
+  			(leftEdge to leftEdge+windowSize-1)
+  			.toList
+  			.filter(x => x>=0 && x<xArray.size)
+  		})
+
+  	val correlationArray = windowList
+  		.map( (window: List[Int]) => {
+
+  			val xWindow = window.map(i => xArray(i)).toArray
+  			val yWindow = window.map(i => yArray(i)).toArray
+  			correlation(xWindow, yWindow)
+
+  		}).toArray
+  	(stddev(correlationArray), correlationArray)
+  }
+
   def main(args: Array[String]) {
+
+  	
+ 	
 
   	val writer = new PrintWriter(new File(args(0)))
   	def writeln(str: String): Unit = writer.write(str + '\n')
@@ -148,16 +187,18 @@ object SimpleApp {
 	val ngramSubset = sc.parallelize(ngramMap.take(1000), 4).cache
 	// val pearsons = new PearsonsCorrelation()
 	// val pairwiseCorrelations = ngramMap.cartesian(ngramMap)
-	val pairwiseCorrelations = ngramSubset.cartesian(ngramSubset)
+	
+	val cartesianWords = ngramSubset.cartesian(ngramSubset)
 		.filter { case ( (ngram1:String, array1:Array[Double]), (ngram2:String, array2:Array[Double])) => {
 				(ngram1 < ngram2) 
 			}
-		}
+		}.cache
+
+	val pairwiseCorrelations = cartesianWords
 		.map { case ( (ngram1:String, array1:Array[Double]), (ngram2:String, array2:Array[Double])) => {
 				((ngram1, ngram2), correlation(array1, array2))
 			}
 		}
-		.cache
 
 	// println("There are " + pairwiseCorrelations.count + " pairwise correlations")
 	// println("The 100 most positively correlated are: ")
@@ -178,8 +219,15 @@ object SimpleApp {
 
 	writeln("The 100 least correlated words are: ")
 	pairwiseCorrelations.map(pair => if(pair._2 >= 0) pair else (pair._1, -pair._2)).sortBy(pair => pair._2, true).take(100).foreach(pair => writeln(pair.toString))
-	
 
+	val corrSeries = cartesianWords
+		.map { case ( (ngram1:String, array1:Array[Double]), (ngram2:String, array2:Array[Double])) => {
+				((ngram1, ngram2), correlationSeries(array1, array2))
+			}
+		}
+
+	writeln("The 100 most interesting word correlation time series (i.e., greatest STD DEV): ")
+	corrSeries.sortBy(pair => pair._2._1, false).take(100).foreach(pair => writeln(pair.toString))
 	
 	writer.close()
 
