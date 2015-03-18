@@ -46,7 +46,7 @@ import scala.math.pow
 import java.io._
 
 // import org.apache.commons.math3.stat.correlation.PearsonsCorrelation
-// import org.apache.commons.math3.stat.StatUtils._
+import org.apache.commons.math3.stat.descriptive.moment.StandardDeviation
  
 // class Regex(str: String) extends Serializable {
 //   val regex = str.r.unanchored
@@ -103,15 +103,15 @@ object SimpleApp {
 	numerator / (denomX*denomY)
   }
 
-	def variance(xArray:Array[Double]) : Double = {
-		val meanX = xArray.sum / xArray.length
-		val sumOfSquares = xArray.foldLeft(0.0) {case (acc: Double, x:Double) => acc + pow((x-meanX),2.0)}
-		sumOfSquares / xArray.length.toDouble
-	}
+	// def variance(xArray:Array[Double]) : Double = {
+	// 	val meanX = xArray.sum / xArray.length
+	// 	val sumOfSquares = xArray.foldLeft(0.0) {case (acc: Double, x:Double) => acc + pow((x-meanX),2.0)}
+	// 	sumOfSquares / xArray.length.toDouble
+	// }
 
-	def stddev(xArray:Array[Double]) : Double = {
-		sqrt(variance(xArray))
-	}
+	// def stddev(xArray:Array[Double]) : Double = {
+	// 	sqrt(variance(xArray))
+	// }
   def correlationSeries(xArray:Array[Double], yArray:Array[Double], windowSize: Int = 10): (Double, Array[Double]) = {
 
   	assert(xArray.size == yArray.size)
@@ -132,7 +132,8 @@ object SimpleApp {
   			correlation(xWindow, yWindow)
 
   		}).toArray
-  	(stddev(correlationArray), correlationArray)
+  	val stddev = new StandardDeviation()
+  	(stddev.evaluate(correlationArray), correlationArray)
   }
 
   def main(args: Array[String]) {
@@ -224,7 +225,18 @@ object SimpleApp {
 		}
 
 	writeln("The 100 most interesting word correlation time series (i.e., greatest STD DEV): ")
-	corrSeries.filter(pair => pair._2._1 < 10).sortBy(pair => pair._2._1, false).take(100).foreach(pair => writeln(pair.toString))
+	corrSeries
+		.filter(pair => pair._2._1 < 10)
+		.sortBy(pair => pair._2._1, false)
+		.take(100)
+		.foreach(pair => {
+			writeln(pair._1 + ": " + pair._2._1)
+			writer.write("[")
+			pair._2._2.foreach(x => writer.write(x + ","))
+			writer.write("]\n")
+		})
+
+	writeln("The End!!!")
 	
 	writer.close()
 
