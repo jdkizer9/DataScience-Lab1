@@ -165,7 +165,7 @@ object SimpleApp {
 		}
 		.cache
 
-	// val ngramSubset = sc.parallelize(ngramMap.take(1000), 4).cache
+	val ngramSubset = sc.parallelize(ngramMap.take(1000), 4).cache
 	
 	val cartesianWords = ngramSubset.cartesian(ngramSubset)
 	//val cartesianWords = ngramMap.cartesian(ngramMap)
