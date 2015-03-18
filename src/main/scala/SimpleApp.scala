@@ -205,13 +205,26 @@ object SimpleApp {
 		.map { case ( (ngram1:String, array1:Array[Double]), (ngram2:String, array2:Array[Double])) => {
 				((ngram1, ngram2), correlationSeries(array1, array2))
 			}
-		}
+		}.cache
 
 	writeln("\n*****************************************************")
-	writeln("The 100 most interesting word correlation time series (i.e., greatest STD DEV): ")
+	writeln("The 100 correlation time series with highest std dev: ")
 	corrSeries
 		//.filter(pair => pair._2._1 < 10)
 		.sortBy(pair => pair._2._1, false)
+		.take(100)
+		.foreach(pair => {
+			writeln(pair._1 + ": " + pair._2._1)
+			writer.write("[")
+			pair._2._2.foreach(x => writer.write(x + ","))
+			writer.write("]\n")
+		})
+
+	writeln("\n*****************************************************")
+	writeln("The 100 correlation time series with highest std dev: ")
+	corrSeries
+		//.filter(pair => pair._2._1 < 10)
+		.sortBy(pair => pair._2._1)
 		.take(100)
 		.foreach(pair => {
 			writeln(pair._1 + ": " + pair._2._1)
