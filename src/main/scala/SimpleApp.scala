@@ -178,7 +178,7 @@ object SimpleApp {
 		.map { case ( (ngram1:String, array1:Array[Double]), (ngram2:String, array2:Array[Double])) => {
 				((ngram1, ngram2), correlation(array1, array2))
 			}
-		}
+		}.cache
 
 	writeln("There are " + ngramMap.count + " 1grams to analyze")
 	writeln("There are " + pairwiseCorrelations.count + " pairwise correlations")
