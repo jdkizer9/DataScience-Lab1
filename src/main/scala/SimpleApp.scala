@@ -168,7 +168,7 @@ object SimpleApp {
 	//val ngramSubset = sc.parallelize(ngramMap.take(1000), 4).cache
 	
 	//val cartesianWords = ngramSubset.cartesian(ngramSubset)
-	val cartesianWords = ngramMap.cartesian(ngramMap)
+	val cartesianWords = ngramMap.sample(false, (10000 / ngramMap.count).toDouble).cartesian(ngramMap)
 		.filter { case ( (ngram1:String, array1:Array[Double]), (ngram2:String, array2:Array[Double])) => {
 				(ngram1 < ngram2) 
 			}
@@ -181,6 +181,7 @@ object SimpleApp {
 		}.cache
 
 	writeln("There are " + ngramMap.count + " 1grams to analyze")
+	writeln("Randomly sampled " + cartesianWords.count + " 1grams to analyze")
 	writeln("There are " + pairwiseCorrelations.count + " pairwise correlations")
 	writeln("\n*****************************************************")
 	writeln("The 100 most positively correlated are: ")
