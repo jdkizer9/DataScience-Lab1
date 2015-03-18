@@ -129,7 +129,7 @@ object SimpleApp {
     val sc = new SparkContext(conf)
 
     val s3BucketURI = "s3n://datasets.elasticmapreduce/ngrams/books/20090715/eng-us-all/1gram/data/"
-    val records = sc.hadoopFile(s3BucketURI, classOf[SequenceFileInputFormat[LongWritable, Text]], classOf[LongWritable], classOf[Text], 16)
+    val records = sc.hadoopFile(s3BucketURI, classOf[SequenceFileInputFormat[LongWritable, Text]], classOf[LongWritable], classOf[Text], 256)
 					.map(r => new NgramRecord(r._2.toString))
 
 	val yearSet = (1908 to 2008).toSet
@@ -165,7 +165,7 @@ object SimpleApp {
 		}
 		.cache
 
-	val ngramSubset = sc.parallelize(ngramMap.take(1000), 4).cache
+	//val ngramSubset = sc.parallelize(ngramMap.take(1000), 4).cache
 	
 	//val cartesianWords = ngramSubset.cartesian(ngramSubset)
 	val cartesianWords = ngramMap.cartesian(ngramMap)
