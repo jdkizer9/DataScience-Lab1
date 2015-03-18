@@ -135,9 +135,14 @@ object SimpleApp {
 	val yearSet = (1908 to 2008).toSet
 	//ngramMap RDD[ngram:String -> Vector of Match Counts)
 	val normalizer = new Normalizer()
+	val alpha = """[a-zA-Z]+""".r
 	val ngramMap = records
 		.map(r => (r.ngram.toLowerCase, (r.year, r.matches.toDouble)))
 		.groupByKey()
+		.filter { case (ngram:String, iter: Iterable[(Int,Double)]) => {
+				((alpha findFirstIn ngram) != None)
+			}
+		}
 		.map { case (ngram:String, iter: Iterable[(Int,Double)]) => {
 				
 				val combineYears:Iterable[(Int,Double)] = iter
@@ -160,10 +165,10 @@ object SimpleApp {
 		}
 		.cache
 
-	val ngramSubset = sc.parallelize(ngramMap.take(1000), 4).cache
+	// val ngramSubset = sc.parallelize(ngramMap.take(1000), 4).cache
 	
-	// val cartesianWords = ngramSubset.cartesian(ngramSubset)
 	val cartesianWords = ngramSubset.cartesian(ngramSubset)
+	//val cartesianWords = ngramMap.cartesian(ngramMap)
 		.filter { case ( (ngram1:String, array1:Array[Double]), (ngram2:String, array2:Array[Double])) => {
 				(ngram1 < ngram2) 
 			}
