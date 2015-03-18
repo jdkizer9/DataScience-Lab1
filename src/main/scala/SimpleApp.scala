@@ -42,8 +42,9 @@ import org.apache.spark.mllib.linalg._
 import org.apache.spark.mllib.feature._
 
 import scala.math.sqrt
-
 import scala.math.pow
+import java.io._
+
 // import org.apache.commons.math3.stat.correlation.PearsonsCorrelation
 // import org.apache.commons.math3.stat.StatUtils._
  
@@ -102,6 +103,10 @@ object SimpleApp {
 	numerator / (denomX*denomY)
   }
   def main(args: Array[String]) {
+
+  	val writer = new PrintWriter(new File(args(0)))
+  	def writeln(str: String): Unit = writer.write(str + '\n')
+
     val conf = new SparkConf()
       .setAppName("ngrams")
       .set("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
@@ -119,6 +124,7 @@ object SimpleApp {
 		.map(r => (r.ngram.toLowerCase, (r.year, r.matches.toDouble)))
 		.groupByKey()
 		.map { case (ngram:String, iter: Iterable[(Int,Double)]) => {
+				
 				val combineYears:Iterable[(Int,Double)] = iter
 					.groupBy( (pair:(Int,Double)) => pair._1)
 					.mapValues((i:Iterable[(Int,Double)]) => i.foldLeft(0.0)(_ + _._2))
@@ -153,17 +159,29 @@ object SimpleApp {
 		}
 		.cache
 
-	println("There are " + pairwiseCorrelations.count + " pairwise correlations")
+	// println("There are " + pairwiseCorrelations.count + " pairwise correlations")
+	// println("The 100 most positively correlated are: ")
+	// pairwiseCorrelations.sortBy(pair => pair._2, false).take(100).foreach(println)
 
-	println("The 100 most positively correlated are: ")
-	pairwiseCorrelations.sortBy(pair => pair._2, false).take(100).foreach(println)
+	// println("The 100 most negativly correlated words are: ")
+	// pairwiseCorrelations.sortBy(pair => pair._2, true).take(100).foreach(println)
 
-	println("The 100 most negativly correlated words are: ")
-	pairwiseCorrelations.sortBy(pair => pair._2, true).take(100).foreach(println)
+	// println("The 100 least correlated words are: ")
+	// pairwiseCorrelations.map(pair => if(pair._2 >= 0) pair else (pair._1, -pair._2)).sortBy(pair => pair._2, true).take(100).foreach(println)
 
-	println("The 100 least correlated words are: ")
-	pairwiseCorrelations.map(pair => if(pair._2 >= 0) pair else (pair._1, -pair._2)).sortBy(pair => pair._2, true).take(100).foreach(println)
+	writeln("There are " + pairwiseCorrelations.count + " pairwise correlations")
+	writeln("The 100 most positively correlated are: ")
+	pairwiseCorrelations.sortBy(pair => pair._2, false).take(100).foreach(pair => writeln(pair.toString))
 
+	writeln("The 100 most negativly correlated words are: ")
+	pairwiseCorrelations.sortBy(pair => pair._2, true).take(100).foreach(pair => writeln(pair.toString))
+
+	writeln("The 100 least correlated words are: ")
+	pairwiseCorrelations.map(pair => if(pair._2 >= 0) pair else (pair._1, -pair._2)).sortBy(pair => pair._2, true).take(100).foreach(pair => writeln(pair.toString))
+	
+
+	
+	writer.close()
 
 	// println(ngramSubset.first._1)
 	// println(ngramSubset.first._2)
