@@ -157,6 +157,7 @@ object SimpleApp {
 				((iter.size == yearSet.size) && (iter.foldLeft(0.0)(_ + _._2 ) > yearSet.size*20))
 			}
 		}
+		.sample(false, 0.05)
 		.map { case (ngram:String, iter: Iterable[(Int,Double)]) => {
 				val yearMatchPairs: List[(Int, Double)] = iter.toList.sortBy(pair => pair._1)
 				val matchVector = Vectors.dense(yearMatchPairs.unzip._2.toArray)
@@ -168,8 +169,11 @@ object SimpleApp {
 	//val ngramSubset = sc.parallelize(ngramMap.take(1000), 4).cache
 	
 	//val cartesianWords = ngramSubset.cartesian(ngramSubset)
-	val ngramSamples = ngramMap.sample(false, 0.05)
-	val cartesianWords = ngramSamples.cartesian(ngramSamples)
+	//val ngramSamples = ngramMap.sample(false, 0.05)
+
+	writeln("Randomly sampled " + ngramMap.count + " 1grams to analyze")
+	
+	val cartesianWords = ngramMap.cartesian(ngramMap)
 		.filter { case ( (ngram1:String, array1:Array[Double]), (ngram2:String, array2:Array[Double])) => {
 				(ngram1 < ngram2) 
 			}
@@ -181,8 +185,8 @@ object SimpleApp {
 			}
 		}.cache
 
-	writeln("There are " + ngramMap.count + " 1grams to analyze")
-	writeln("Randomly sampled " + cartesianWords.count + " 1grams to analyze")
+	
+	//writeln("Randomly sampled " + cartesianWords.count + " 1grams to analyze")
 	writeln("There are " + pairwiseCorrelations.count + " pairwise correlations")
 	writeln("\n*****************************************************")
 	writeln("The 100 most positively correlated are: ")
