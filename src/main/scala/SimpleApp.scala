@@ -157,7 +157,7 @@ object SimpleApp {
 				((iter.size == yearSet.size) && (iter.foldLeft(0.0)(_ + _._2 ) > yearSet.size*20))
 			}
 		}
-		.sample(false, 0.0001)
+		.sample(false, 0.01)
 		.map { case (ngram:String, iter: Iterable[(Int,Double)]) => {
 				val yearMatchPairs: List[(Int, Double)] = iter.toList.sortBy(pair => pair._1)
 				val matchVector = Vectors.dense(yearMatchPairs.unzip._2.toArray)
@@ -189,17 +189,17 @@ object SimpleApp {
 	//writeln("Randomly sampled " + cartesianWords.count + " 1grams to analyze")
 	writeln("There are " + pairwiseCorrelations.count + " pairwise correlations")
 	writeln("\n*****************************************************")
-	writeln("The 100 most positively correlated are: ")
+	writeln("The 10 most positively correlated are: ")
 
-	pairwiseCorrelations.sortBy(pair => pair._2, false).take(100).foreach(pair => writeln(pair.toString))
-
-	writeln("\n*****************************************************")
-	writeln("The 100 most negativly correlated words are: ")
-	pairwiseCorrelations.sortBy(pair => pair._2, true).take(100).foreach(pair => writeln(pair.toString))
+	pairwiseCorrelations.sortBy(pair => pair._2, false).take(10).foreach(pair => writeln(pair.toString))
 
 	writeln("\n*****************************************************")
-	writeln("The 100 least correlated words are: ")
-	pairwiseCorrelations.map(pair => if(pair._2 >= 0) pair else (pair._1, -pair._2)).sortBy(pair => pair._2, true).take(100).foreach(pair => writeln(pair.toString))
+	writeln("The 10 most negativly correlated words are: ")
+	pairwiseCorrelations.sortBy(pair => pair._2, true).take(10).foreach(pair => writeln(pair.toString))
+
+	writeln("\n*****************************************************")
+	writeln("The 10 least correlated words are: ")
+	pairwiseCorrelations.map(pair => if(pair._2 >= 0) pair else (pair._1, -pair._2)).sortBy(pair => pair._2, true).take(10).foreach(pair => writeln(pair.toString))
 
 	val corrSeries = cartesianWords
 		.map { case ( (ngram1:String, array1:Array[Double]), (ngram2:String, array2:Array[Double])) => {
@@ -208,28 +208,46 @@ object SimpleApp {
 		}.cache
 
 	writeln("\n*****************************************************")
-	writeln("The 100 correlation time series with highest std dev: ")
+	writeln("The 10 correlation time series with highest std dev: ")
 	corrSeries
 		//.filter(pair => pair._2._1 < 10)
 		.sortBy(pair => pair._2._1, false)
-		.take(100)
+		.take(10)
 		.foreach(pair => {
+			writeln("\n*****************************************************")
 			writeln(pair._1 + ": " + pair._2._1)
 			writer.write("[")
 			pair._2._2.foreach(x => writer.write(x + ","))
 			writer.write("]\n")
+			writeln(pair._1._1)
+			writer.write("[")
+			ngramMap.lookup(pair._1._1).head.foreach(x => writer.write(x + ","))
+			writer.write("]\n")
+			writeln(pair._1._2)
+			writer.write("[")
+			ngramMap.lookup(pair._1._2).head.foreach(x => writer.write(x + ","))
+			writer.write("]\n")
 		})
 
 	writeln("\n*****************************************************")
-	writeln("The 100 correlation time series with highest std dev: ")
+	writeln("The 10 correlation time series with highest std dev: ")
 	corrSeries
 		//.filter(pair => pair._2._1 < 10)
 		.sortBy(pair => pair._2._1)
-		.take(100)
+		.take(10)
 		.foreach(pair => {
+			writeln("\n*****************************************************")
 			writeln(pair._1 + ": " + pair._2._1)
 			writer.write("[")
 			pair._2._2.foreach(x => writer.write(x + ","))
+			writer.write("]\n")
+			writeln(pair._1._1)
+			writer.write("[")
+			ngramMap.lookup(pair._1._1).head.foreach(x => writer.write(x + ","))
+			writer.write("]\n")
+			writeln(pair._1._2)
+			writer.write("[")
+			ngramMap.lookup(pair._1._2).head.foreach(x => writer.write(x + ","))
 			writer.write("]\n")
 		})
 
