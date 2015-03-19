@@ -157,7 +157,7 @@ object SimpleApp {
 				((iter.size == yearSet.size) && (iter.foldLeft(0.0)(_ + _._2 ) > yearSet.size*20))
 			}
 		}
-		.sample(false, 0.05)
+		.sample(false, 0.0001)
 		.map { case (ngram:String, iter: Iterable[(Int,Double)]) => {
 				val yearMatchPairs: List[(Int, Double)] = iter.toList.sortBy(pair => pair._1)
 				val matchVector = Vectors.dense(yearMatchPairs.unzip._2.toArray)
